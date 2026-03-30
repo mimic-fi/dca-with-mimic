@@ -1,0 +1,21 @@
+{
+  "name": "dca-with-mimic",
+  "private": true,
+  "version": "1.0.0",
+  "description": "DCA example with Mimic",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspaces run test"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/**"
+    ],
+    "nohoist": [
+      "**/mocha",
+      "**/mocha/**"
+    ]
+  }
+}
