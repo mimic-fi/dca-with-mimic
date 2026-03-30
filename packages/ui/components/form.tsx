@@ -35,7 +35,7 @@ export function Form() {
   const [sourceToken, setSourceToken] = useState<Token>(TOKENS.base.USDC)
   const [sourceAmount, setSourceAmount] = useState('')
   const [destinationChain, setDestinationChain] = useState<Chain>(CHAINS.base)
-  const [destinationToken, setDestinationToken] = useState<Token>(TOKENS.base.USDT)
+  const [destinationToken, setDestinationToken] = useState<Token>(TOKENS.base.WETH)
   const [thresholdPriceUsd, setThresholdPriceUsd] = useState('')
   const [recipient, setRecipient] = useState('0xbcE3248eDE29116e4bD18416dcC2DFca668Eeb84')
   const [slippage, setSlippage] = useState('2.0')
