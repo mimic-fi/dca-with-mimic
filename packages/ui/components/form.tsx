@@ -36,7 +36,8 @@ export function Form() {
   const [sourceAmount, setSourceAmount] = useState('')
   const [destinationChain, setDestinationChain] = useState<Chain>(CHAINS.base)
   const [destinationToken, setDestinationToken] = useState<Token>(TOKENS.base.WETH)
-  const [thresholdPriceUsd, setThresholdPriceUsd] = useState('')
+  const [lowerThresholdPriceUsd, setLowerThresholdPriceUsd] = useState('0')
+  const [upperThresholdPriceUsd, setUpperThresholdPriceUsd] = useState('0')
   const [recipient, setRecipient] = useState('0xbcE3248eDE29116e4bD18416dcC2DFca668Eeb84')
   const [slippage, setSlippage] = useState('2.0')
   const [maxFee, setMaxFee] = useState('0.1')
@@ -102,7 +103,8 @@ export function Form() {
 
     const inputs = currentDca.input
     setSourceAmount(String(inputs.sourceAmount))
-    setThresholdPriceUsd(String(inputs.thresholdPriceUsd))
+    setLowerThresholdPriceUsd(String(inputs.lowerThresholdPriceUsd ?? '0'))
+    setUpperThresholdPriceUsd(String(inputs.upperThresholdPriceUsd ?? inputs.thresholdPriceUsd ?? '0'))
     setMaxFee(String(inputs.maxFee))
     setSlippage(String(Number(inputs.slippageBps || 0) / 100))
     setRecipient(String(inputs.recipient))
@@ -132,10 +134,40 @@ export function Form() {
       return
     }
 
-    if (!thresholdPriceUsd || Number.parseFloat(thresholdPriceUsd) <= 0) {
+    if (
+      lowerThresholdPriceUsd === '' ||
+      Number.isNaN(Number.parseFloat(lowerThresholdPriceUsd)) ||
+      Number.parseFloat(lowerThresholdPriceUsd) < 0
+    ) {
       toast({
-        title: 'Invalid USD Price Threshold',
-        description: 'Please enter a valid USD price threshold.',
+        title: 'Invalid Lower USD Price Threshold',
+        description: 'Please enter a valid lower USD price threshold. Use 0 for no lower limit.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (
+      upperThresholdPriceUsd === '' ||
+      Number.isNaN(Number.parseFloat(upperThresholdPriceUsd)) ||
+      Number.parseFloat(upperThresholdPriceUsd) < 0
+    ) {
+      toast({
+        title: 'Invalid Upper USD Price Threshold',
+        description: 'Please enter a valid upper USD price threshold. Use 0 for no upper limit.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (
+      Number.parseFloat(lowerThresholdPriceUsd) > 0 &&
+      Number.parseFloat(upperThresholdPriceUsd) > 0 &&
+      Number.parseFloat(lowerThresholdPriceUsd) > Number.parseFloat(upperThresholdPriceUsd)
+    ) {
+      toast({
+        title: 'Invalid Threshold Range',
+        description: 'The lower threshold must be less than or equal to the upper threshold.',
         variant: 'destructive',
       })
       return
@@ -167,7 +199,8 @@ export function Form() {
         sourceAmount,
         destinationChain,
         destinationToken,
-        thresholdPriceUsd,
+        lowerThresholdPriceUsd,
+        upperThresholdPriceUsd,
         recipient,
         maxFee,
         slippage,
@@ -215,7 +248,8 @@ export function Form() {
       })
 
       setCurrentDca(null)
-      setThresholdPriceUsd('')
+      setLowerThresholdPriceUsd('0')
+      setUpperThresholdPriceUsd('0')
       setSourceAmount('')
     } catch (error) {
       toast({
@@ -291,6 +325,52 @@ export function Form() {
 
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Advanced Price Range</Label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="lower-price-setting" className="text-sm text-muted-foreground">
+                        Lower price
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="lower-price-setting"
+                          type="number"
+                          placeholder="0"
+                          value={lowerThresholdPriceUsd}
+                          onChange={(e) => setLowerThresholdPriceUsd(e.target.value)}
+                          className="h-11 bg-secondary/50 border-border"
+                          min="0"
+                          step="0.01"
+                          disabled={isFormDisabled}
+                        />
+                        <span className="text-muted-foreground">USD</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="upper-price-setting" className="text-sm text-muted-foreground">
+                        Upper price
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="upper-price-setting"
+                          type="number"
+                          placeholder="0"
+                          value={upperThresholdPriceUsd}
+                          onChange={(e) => setUpperThresholdPriceUsd(e.target.value)}
+                          className="h-11 bg-secondary/50 border-border"
+                          min="0"
+                          step="0.01"
+                          disabled={isFormDisabled}
+                        />
+                        <span className="text-muted-foreground">USD</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Set either value to 0 to remove that limit. If both are 0, price checks are disabled.
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="slippage-setting" className="text-sm text-muted-foreground">
                     Slippage
                   </Label>
@@ -349,9 +429,6 @@ export function Form() {
             <div className="w-36 shrink-0">
               <Label className="text-muted-foreground">Source Amount</Label>
             </div>
-            <div className="w-36 shrink-0">
-              <Label className="text-muted-foreground">USD Price Threshold</Label>
-            </div>
           </div>
 
           <div className="flex gap-2 items-center">
@@ -367,16 +444,6 @@ export function Form() {
                 placeholder="0.0"
                 value={sourceAmount}
                 onChange={(e) => setSourceAmount(e.target.value)}
-                className="h-12 bg-secondary/50 border-border text-lg text-right"
-                disabled={isFormDisabled}
-              />
-            </div>
-            <div className="w-36 shrink-0">
-              <Input
-                type="number"
-                placeholder="0.0"
-                value={thresholdPriceUsd}
-                onChange={(e) => setThresholdPriceUsd(e.target.value)}
                 className="h-12 bg-secondary/50 border-border text-lg text-right"
                 disabled={isFormDisabled}
               />

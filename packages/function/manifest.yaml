@@ -7,7 +7,8 @@ inputs:
   - sourceAmount: string           # e.g., '10.5' = 10.5 USDC
   - destinationChain: uint32
   - destinationToken: address
-  - thresholdPriceUsd: string      # e.g., '1.5' = 1.5 USD
+  - lowerThresholdPriceUsd: string # e.g., '1.0' = 1.0 USD
+  - upperThresholdPriceUsd: string # e.g., '1.5' = 1.5 USD
   - recipient: address
   - maxFee: string                 # e.g., '0.01' = 0.01 USDC
   - slippageBps: uint16            # e.g., 50 = 0.50%

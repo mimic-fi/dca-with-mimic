@@ -12,7 +12,8 @@ interface DcaParams {
   sourceAmount: string
   destinationChain: Chain
   destinationToken: Token
-  thresholdPriceUsd: string
+  lowerThresholdPriceUsd: string
+  upperThresholdPriceUsd: string
   recipient: string
   maxFee: string
   slippage: string
@@ -59,7 +60,8 @@ export async function dca(params: DcaParams): Promise<Trigger> {
     sourceAmount,
     destinationChain,
     destinationToken,
-    thresholdPriceUsd,
+    lowerThresholdPriceUsd,
+    upperThresholdPriceUsd,
     recipient,
     maxFee,
     slippage,
@@ -67,7 +69,18 @@ export async function dca(params: DcaParams): Promise<Trigger> {
     signer,
   } = params
 
-  const description = `Buying ${destinationToken.symbol} on ${destinationChain.name} when price is above ${thresholdPriceUsd} USD. Paying with ${sourceAmount} ${sourceToken.symbol} on ${sourceChain.name} with ${slippage}% slippage.`
+  const hasLowerThreshold = Number.parseFloat(lowerThresholdPriceUsd) > 0
+  const hasUpperThreshold = Number.parseFloat(upperThresholdPriceUsd) > 0
+  const priceCondition =
+    hasLowerThreshold && hasUpperThreshold
+      ? `when price is between ${lowerThresholdPriceUsd} USD and ${upperThresholdPriceUsd} USD`
+      : hasLowerThreshold
+        ? `when price is above ${lowerThresholdPriceUsd} USD`
+        : hasUpperThreshold
+          ? `when price is below ${upperThresholdPriceUsd} USD`
+          : 'with no price limits'
+
+  const description = `Buying ${destinationToken.symbol} on ${destinationChain.name} ${priceCondition}. Paying with ${sourceAmount} ${sourceToken.symbol} on ${sourceChain.name} with ${slippage}% slippage.`
   const manifest = await sdk().functions.getManifest(FUNCTION_CID)
   const config = (await findCurrentTrigger(signer.address)) || (await findCurrentTrigger(signer.address, false))
   const version = config ? bumpPatch(config.version) : '0.0.1'
@@ -89,7 +102,8 @@ export async function dca(params: DcaParams): Promise<Trigger> {
         sourceAmount,
         destinationChain: destinationChain.id,
         destinationToken: destinationToken.address,
-        thresholdPriceUsd,
+        lowerThresholdPriceUsd,
+        upperThresholdPriceUsd,
         recipient,
         maxFee,
         slippageBps: fp(slippage, BPS_DECIMALS),

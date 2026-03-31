@@ -23,7 +23,8 @@ describe('Function', () => {
     sourceAmount: '10',
     destinationChain: chainId,
     destinationToken: NATIVE_TOKEN_ADDRESS,
-    thresholdPriceUsd: '2000',
+    lowerThresholdPriceUsd: '1500',
+    upperThresholdPriceUsd: '2000',
     recipient: randomEvmAddress(),
     maxFee: '0.1',
     slippageBps: 1,
@@ -76,7 +77,7 @@ describe('Function', () => {
     },
   ]
 
-  describe('when the price is above the threshold', () => {
+  describe('when the price is above the upper threshold', () => {
     const prices = buildPrices(chainId, NATIVE_TOKEN_ADDRESS, '2001')
 
     it('does not produce any intent', async () => {
@@ -86,14 +87,24 @@ describe('Function', () => {
     })
   })
 
-  describe('when the price is below the threshold', () => {
+  describe('when the price is below the lower threshold', () => {
+    const prices = buildPrices(chainId, NATIVE_TOKEN_ADDRESS, '1499')
+
+    it('does not produce any intent', async () => {
+      const result = await runFunction(buildDir, context, { inputs, prices, calls })
+      expect(result.success).to.be.true
+      expect(result.intents).to.be.empty
+    })
+  })
+
+  describe('when the price is within the threshold range', () => {
     const prices = [
       ...buildPrices(chainId, NATIVE_TOKEN_ADDRESS, '2000'),
       ...buildPrices(chainId, inputs.sourceToken, '1'),
     ]
 
     const priceTokenIn = fp(1)
-    const priceTokenOut = fp(2000)
+    const priceTokenOut = fp(inputs.upperThresholdPriceUsd)
     const amountInUsd = (fp(inputs.sourceAmount, tokenInDecimals) * priceTokenIn) / 10n ** BigInt(tokenInDecimals)
     const expectedAmountOut = (amountInUsd * 10n ** BigInt(tokenOutDecimals)) / priceTokenOut
     const bpsDenominator = 10_000n
@@ -125,6 +136,40 @@ describe('Function', () => {
       expect(intent.tokensOut[0].token).to.equal(inputs.destinationToken.toLowerCase())
       expect(intent.tokensOut[0].minAmount).to.equal(expectedMinAmountOut.toString())
       expect(intent.tokensOut[0].recipient).to.equal(context.user)
+    })
+  })
+
+  describe('when the lower threshold is disabled', () => {
+    const prices = [
+      ...buildPrices(chainId, NATIVE_TOKEN_ADDRESS, '50'),
+      ...buildPrices(chainId, inputs.sourceToken, '1'),
+    ]
+
+    it('still produces intents as long as the upper threshold is respected', async () => {
+      const result = await runFunction(buildDir, context, {
+        inputs: { ...inputs, lowerThresholdPriceUsd: '0' },
+        prices,
+        calls,
+      })
+      expect(result.success).to.be.true
+      expect(result.intents).to.have.lengthOf(1)
+    })
+  })
+
+  describe('when both thresholds are disabled', () => {
+    const prices = [
+      ...buildPrices(chainId, NATIVE_TOKEN_ADDRESS, '999999'),
+      ...buildPrices(chainId, inputs.sourceToken, '1'),
+    ]
+
+    it('produces intents without applying any price checks', async () => {
+      const result = await runFunction(buildDir, context, {
+        inputs: { ...inputs, lowerThresholdPriceUsd: '0', upperThresholdPriceUsd: '0' },
+        prices,
+        calls,
+      })
+      expect(result.success).to.be.true
+      expect(result.intents).to.have.lengthOf(1)
     })
   })
 })
