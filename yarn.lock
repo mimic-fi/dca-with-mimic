@@ -1124,6 +1124,18 @@
     ethers "^6.13.5"
     zod "^3.23.8"
 
+"@mimicprotocol/sdk@^0.0.1-rc.41":
+  version "0.0.1-rc.41"
+  resolved "https://registry.yarnpkg.com/@mimicprotocol/sdk/-/sdk-0.0.1-rc.41.tgz#94a10f2b8fefc8025e468914c5bd77021d79e88d"
+  integrity sha512-UO4WuJVqD1X+RqtZbjOo6fnOcGxnELEfQHuthq0jFvYIZB47GUfVFUSL3mtx4Pj7T4wBAxlhURSjE36o6x6Caw==
+  dependencies:
+    "@coral-xyz/anchor" "0.32.1"
+    "@solana/web3.js" "^1.98.4"
+    borsh "^2.0.0"
+    cron-parser "^5.3.1"
+    ethers "^6.13.5"
+    zod "^3.23.8"
+
 "@mimicprotocol/test-ts@0.0.1-rc.41":
   version "0.0.1-rc.41"
   resolved "https://registry.yarnpkg.com/@mimicprotocol/test-ts/-/test-ts-0.0.1-rc.41.tgz#27a2a9ee77548a3a04ed959fb1b33dae9a3e25fa"
